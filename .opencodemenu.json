@@ -1,0 +1,5 @@
+{
+  "apiKey": "your-api-key-here",
+  "apiEndpoint": "http://127.0.0.1:4096",
+  "sessionTimeout": 3600
+}
