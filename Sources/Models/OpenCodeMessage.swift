@@ -108,8 +108,7 @@ struct SendMessageResponse: Decodable {
             return date
         }
         if let time = try? container.nestedContainer(keyedBy: TimeKeys.self, forKey: .time),
-            let created = decodeEpoch(from: time, forKey: .created)
-        {
+            let created = decodeEpoch(from: time, forKey: .created) {
             return dateFromEpoch(created)
         }
         if let created = decodeEpoch(from: container, forKey: .created) {
@@ -123,8 +122,7 @@ struct SendMessageResponse: Decodable {
 
     private static func decodeDate(from container: KeyedDecodingContainer<InfoKeys>) -> Date {
         if let time = try? container.nestedContainer(keyedBy: TimeKeys.self, forKey: .time),
-            let created = decodeEpoch(from: time, forKey: .created)
-        {
+            let created = decodeEpoch(from: time, forKey: .created) {
             return dateFromEpoch(created)
         }
         return Date()
