@@ -71,17 +71,26 @@ class WindowStateManager: ObservableObject {
         let logStore = viewModel?.logStore ?? RuntimeLogStore.shared
         logStore.log("アプリ再起動開始", category: "WindowManager")
         
-        let appPath = Bundle.main.bundlePath
-        logStore.log("バンドルパス: \(appPath)", category: "WindowManager")
+        let appBundlePath = Bundle.main.bundlePath
+        
+        logStore.log("バンドルパス: \(appBundlePath)", category: "WindowManager")
         
         let task = Process()
         task.launchPath = "/usr/bin/open"
-        task.arguments = [appPath]
-        task.launch()
+        task.arguments = ["-n", appBundlePath]
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            logStore.log("アプリを終了します", category: "WindowManager")
-            NSApplication.shared.terminate(nil)
+        logStore.log("openコマンド実行開始", category: "WindowManager")
+        
+        task.terminationHandler = { status in
+            logStore.log("openコマンド終了, ステータス: \(status)", category: "WindowManager")
+            
+            DispatchQueue.main.async {
+                logStore.log("アプリを終了します", category: "WindowManager")
+                NSApplication.shared.terminate(nil)
+            }
         }
+        
+        task.launch()
+        logStore.log("openコマンド起動", category: "WindowManager")
     }
 }
