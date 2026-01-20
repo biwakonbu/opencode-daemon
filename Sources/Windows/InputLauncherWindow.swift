@@ -31,6 +31,7 @@ class InputLauncherWindow: NSWindow {
                 }
             },
             onCancel: { [weak self] in
+                self?.viewModel.logStore.log("入力ランチャー: キャンセルボタン押下", category: "InputLauncherWindow")
                 self?.hide()
             }
         )
@@ -43,23 +44,30 @@ class InputLauncherWindow: NSWindow {
     }
     
     private func handleSendMessage() async {
+        viewModel.logStore.log("入力ランチャー: 送信処理開始", category: "InputLauncherWindow")
         await viewModel.sendMessage()
         hide()
     }
     
     func show() {
+        viewModel.logStore.log("InputLauncherWindow表示開始", category: "InputLauncherWindow")
         centerOnScreen()
         orderFrontRegardless()
         makeKey()
+        viewModel.logStore.log("InputLauncherWindow表示完了", category: "InputLauncherWindow")
     }
     
     func hide() {
+        viewModel.logStore.log("InputLauncherWindow非表示開始, 現在の可視状態: \(isVisible)", category: "InputLauncherWindow")
         orderOut(nil)
-        viewModel.inputMessage = ""
+        viewModel.logStore.log("InputLauncherWindow非表示完了", category: "InputLauncherWindow")
     }
     
     private func centerOnScreen() {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = NSScreen.main else {
+            viewModel.logStore.log("メインスクリーンが見つかりません", level: .error, category: "InputLauncherWindow")
+            return
+        }
         
         let screenFrame = screen.visibleFrame
         let windowFrame = frame

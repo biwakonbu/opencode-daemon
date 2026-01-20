@@ -58,7 +58,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             self.notificationCenter = notificationCenter
             notificationCenter.requestNotificationAuthorization()
             
-            let globalShortcutMonitor = GlobalShortcutMonitor()
+            let globalShortcutMonitor = GlobalShortcutMonitor(logStore: logStore)
             globalShortcutMonitor.delegate = self
             self.globalShortcutMonitor = globalShortcutMonitor
             globalShortcutMonitor.startMonitoring()
@@ -104,10 +104,14 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: GlobalShortcutDelegate {
     func didToggleChatWindow() {
+        logStore.log("チャットウィンドウ切り替えコールバック受信 (AppState)", category: "Shortcut")
+        logStore.log("現在のスレッド: \(Thread.isMainThread)", category: "Shortcut")
         WindowStateManager.shared.toggleChatWindow()
     }
     
     func didShowInputLauncher() {
+        logStore.log("入力ランチャー表示コールバック受信 (AppState)", category: "Shortcut")
+        logStore.log("現在のスレッド: \(Thread.isMainThread)", category: "Shortcut")
         WindowStateManager.shared.showInputLauncher()
     }
     

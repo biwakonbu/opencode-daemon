@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import HotKey
 import os.log
 
 protocol GlobalShortcutDelegate: AnyObject {
@@ -13,17 +14,49 @@ class GlobalShortcutMonitor {
     private var monitors: [Any] = []
     private var isShiftPressed = false
     private var overlay: ScreenSelectionOverlay?
-    private var logger = OSLog(subsystem: "com.opencodemenu.app", category: "GlobalShortcut")
+    private let logStore: RuntimeLogStore
+    
+    private var chatWindowHotKey: HotKey?
+    private var inputLauncherHotKey: HotKey?
+    
+    init(logStore: RuntimeLogStore = .shared) {
+        self.logStore = logStore
+    }
     
     func startMonitoring() {
+        setupHotKeys()
         setupEventMonitors()
-        os_log("グローバルショートカット監視を開始", log: logger, type: .info)
+        logStore.log("グローバルショートカット監視を開始", category: "GlobalShortcut")
     }
     
     func stopMonitoring() {
+        chatWindowHotKey = nil
+        inputLauncherHotKey = nil
         monitors.forEach { NSEvent.removeMonitor($0) }
         monitors.removeAll()
-        os_log("グローバルショートカット監視を停止", log: logger, type: .info)
+        logStore.log("グローバルショートカット監視を停止", category: "GlobalShortcut")
+    }
+    
+    private func setupHotKeys() {
+        logStore.log("HotKey設定開始", category: "GlobalShortcut")
+        logStore.log("KeyCombo.O = \(KeyCombo(key: .o, modifiers: [.command, .option]))", category: "GlobalShortcut")
+        logStore.log("KeyCombo.I = \(KeyCombo(key: .i, modifiers: [.command, .option]))", category: "GlobalShortcut")
+        
+        let chatKeyCombo = KeyCombo(key: .o, modifiers: [.command, .option])
+        chatWindowHotKey = HotKey(keyCombo: chatKeyCombo) { [weak self] in
+            self?.logStore.log("Cmd+Option+O検出: チャットウィンドウ切り替え", category: "GlobalShortcut")
+            self?.delegate?.didToggleChatWindow()
+        }
+        logStore.log("ChatWindowHotKey created: \(chatWindowHotKey != nil)", category: "GlobalShortcut")
+        
+        let inputKeyCombo = KeyCombo(key: .i, modifiers: [.command, .option])
+        inputLauncherHotKey = HotKey(keyCombo: inputKeyCombo) { [weak self] in
+            self?.logStore.log("Cmd+Option+I検出: 入力ランチャー表示", category: "GlobalShortcut")
+            self?.delegate?.didShowInputLauncher()
+        }
+        logStore.log("InputLauncherHotKey created: \(inputLauncherHotKey != nil)", category: "GlobalShortcut")
+        
+        logStore.log("HotKey設定完了", category: "GlobalShortcut")
     }
     
     private func setupEventMonitors() {
@@ -47,20 +80,6 @@ class GlobalShortcutMonitor {
         if let monitor = mouseUpMonitor {
             monitors.append(monitor)
         }
-        
-        let keyUpMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { [weak self] event in
-            self?.handleKeyUp(event)
-        }
-        if let monitor = keyUpMonitor {
-            monitors.append(monitor)
-        }
-        
-        let keyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleKeyDown(event)
-        }
-        if let monitor = keyDownMonitor {
-            monitors.append(monitor)
-        }
     }
     
     private func handleFlagsChanged(_ event: NSEvent) {
@@ -68,7 +87,7 @@ class GlobalShortcutMonitor {
         
         if newShiftPressed != isShiftPressed {
             isShiftPressed = newShiftPressed
-            os_log("Shiftキー状態変更: %@", log: logger, type: .debug, isShiftPressed ? "押下" : "解放")
+            logStore.log("Shiftキー状態変更: \(isShiftPressed ? "押下" : "解放")", category: "GlobalShortcut")
         }
     }
     
@@ -76,11 +95,11 @@ class GlobalShortcutMonitor {
         guard isShiftPressed else { return }
         guard overlay == nil else { return }
         guard let mainScreen = NSScreen.main else {
-            os_log("メインスクリーンが見つかりません", log: logger, type: .error)
+            logStore.log("メインスクリーンが見つかりません", level: .error, category: "GlobalShortcut")
             return
         }
         
-        os_log("Shift+マウスダウン検出: オーバーレイを表示", log: logger, type: .info)
+        logStore.log("Shift+マウスダウン検出: オーバーレイを表示", category: "GlobalShortcut")
         showOverlay(on: mainScreen)
     }
     
@@ -88,32 +107,7 @@ class GlobalShortcutMonitor {
         guard isShiftPressed else { return }
         guard overlay != nil else { return }
         
-        os_log("Shift+マウスアップ検出: キャプチャ終了", log: logger, type: .info)
-    }
-    
-    private func handleKeyUp(_ event: NSEvent) {
-        if event.keyCode == 53 {
-            os_log("ESCキー検出: 選択キャンセル", log: logger, type: .debug)
-        }
-    }
-    
-    private func handleKeyDown(_ event: NSEvent) {
-        let modifiers = event.modifierFlags
-        let hasCommand = modifiers.contains(.command)
-        let hasShift = modifiers.contains(.shift)
-        
-        guard hasCommand && hasShift else { return }
-        
-        switch event.keyCode {
-        case 31:
-            os_log("Cmd+Shift+O検出: チャットウィンドウ切り替え", log: logger, type: .info)
-            delegate?.didToggleChatWindow()
-        case 34:
-            os_log("Cmd+Shift+I検出: 入力ランチャー表示", log: logger, type: .info)
-            delegate?.didShowInputLauncher()
-        default:
-            break
-        }
+        logStore.log("Shift+マウスアップ検出: キャプチャ終了", category: "GlobalShortcut")
     }
     
     private func showOverlay(on screen: NSScreen) {
@@ -132,9 +126,9 @@ class GlobalShortcutMonitor {
         let trusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
         
         if !trusted {
-            os_log("アクセシビリティ権限がありません", log: logger, type: .info)
+            logStore.log("アクセシビリティ権限がありません", category: "GlobalShortcut")
         } else {
-            os_log("アクセシビリティ権限が付与されています", log: logger, type: .info)
+            logStore.log("アクセシビリティ権限が付与されています", category: "GlobalShortcut")
         }
         
         return trusted
@@ -143,13 +137,13 @@ class GlobalShortcutMonitor {
 
 extension GlobalShortcutMonitor: ScreenSelectionDelegate {
     func didSelectRect(_ rect: CGRect) {
-        os_log("矩形選択完了: %@", log: logger, type: .info, NSStringFromRect(rect))
+        logStore.log("矩形選択完了: \(NSStringFromRect(rect))", category: "GlobalShortcut")
         hideOverlay()
         delegate?.didCaptureRect(rect)
     }
     
     func didCancelSelection() {
-        os_log("矩形選択キャンセル", log: logger, type: .debug)
+        logStore.log("矩形選択キャンセル", category: "GlobalShortcut")
         hideOverlay()
     }
 }

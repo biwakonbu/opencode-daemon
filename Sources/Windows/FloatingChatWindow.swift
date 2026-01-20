@@ -34,7 +34,10 @@ class FloatingChatWindow: NSWindow {
     }
     
     private func positionWindow() {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = NSScreen.main else {
+            viewModel.logStore.log("メインスクリーンが見つかりません", level: .error, category: "FloatingChatWindow")
+            return
+        }
         
         let screenFrame = screen.visibleFrame
         let windowHeight = frame.height
@@ -46,12 +49,16 @@ class FloatingChatWindow: NSWindow {
     }
     
     func show() {
+        viewModel.logStore.log("FloatingChatWindow表示開始", category: "FloatingChatWindow")
         positionWindow()
         orderFrontRegardless()
         makeKey()
+        viewModel.logStore.log("FloatingChatWindow表示完了, 可視状態: \(isVisible)", category: "FloatingChatWindow")
     }
     
     func hide() {
+        viewModel.logStore.log("FloatingChatWindow非表示開始, 現在の可視状態: \(isVisible)", category: "FloatingChatWindow")
         orderOut(nil)
+        viewModel.logStore.log("FloatingChatWindow非表示完了", category: "FloatingChatWindow")
     }
 }

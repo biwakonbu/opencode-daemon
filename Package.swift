@@ -15,7 +15,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess.git", from: "4.2.2")
+        .package(url: "https://github.com/kishikawakatsumi/KeychainAccess.git", from: "4.2.2"),
+        .package(url: "https://github.com/soffes/HotKey.git", from: "0.2.0")
     ],
     targets: [
         .executableTarget(
@@ -39,7 +40,7 @@ let package = Package(
         ),
         .target(
             name: "OpenCodeMenuAppCore",
-            dependencies: ["KeychainAccess"],
+            dependencies: ["KeychainAccess", "HotKey"],
             path: "Sources",
             exclude: ["OpenCodeMenuApp.swift"],
             sources: [
@@ -55,6 +56,11 @@ let package = Package(
                 .linkedFramework("SwiftUI"),
                 .linkedFramework("AppKit")
             ]
+        ),
+        .testTarget(
+            name: "OpenCodeMenuAppTests",
+            dependencies: ["OpenCodeMenuAppCore"],
+            path: "Tests"
         ),
     ]
 )
