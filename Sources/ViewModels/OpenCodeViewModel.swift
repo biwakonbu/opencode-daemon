@@ -90,6 +90,11 @@ class OpenCodeViewModel: ObservableObject {
         
         isLoading = false
     }
+
+    func sendMessageWithAutoSession() async {
+        guard await ensureSessionExists() else { return }
+        await sendMessage()
+    }
     
     func captureAndSendScreenshot() async {
         guard let session = currentSession else {
@@ -136,6 +141,11 @@ class OpenCodeViewModel: ObservableObject {
         }
         
         isLoading = false
+    }
+
+    func captureAndSendScreenshotWithAutoSession() async {
+        guard await ensureSessionExists() else { return }
+        await captureAndSendScreenshot()
     }
     
     func clearSession() {

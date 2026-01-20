@@ -23,6 +23,7 @@ class GlobalShortcutMonitor {
         self.logStore = logStore
     }
     
+    @MainActor
     func startMonitoring() {
         setupHotKeys()
         setupEventMonitors()
@@ -39,20 +40,26 @@ class GlobalShortcutMonitor {
     
     private func setupHotKeys() {
         logStore.log("HotKey設定開始", category: "GlobalShortcut")
-        logStore.log("KeyCombo.O = \(KeyCombo(key: .o, modifiers: [.command, .option]))", category: "GlobalShortcut")
-        logStore.log("KeyCombo.I = \(KeyCombo(key: .i, modifiers: [.command, .option]))", category: "GlobalShortcut")
+        logStore.log("KeyCombo.O = \(KeyCombo(key: .o, modifiers: [.command, .shift]))", category: "GlobalShortcut")
+        logStore.log("KeyCombo.I = \(KeyCombo(key: .i, modifiers: [.command, .shift]))", category: "GlobalShortcut")
         
-        let chatKeyCombo = KeyCombo(key: .o, modifiers: [.command, .option])
-        chatWindowHotKey = HotKey(keyCombo: chatKeyCombo) { [weak self] in
-            self?.logStore.log("Cmd+Option+O検出: チャットウィンドウ切り替え", category: "GlobalShortcut")
-            self?.delegate?.didToggleChatWindow()
+        let chatKeyCombo = KeyCombo(key: .o, modifiers: [.command, .shift])
+        chatWindowHotKey = HotKey(keyCombo: chatKeyCombo)
+        chatWindowHotKey?.keyDownHandler = { [weak self] in
+            self?.logStore.log("Cmd+Shift+O検出: チャットウィンドウ切り替え", category: "GlobalShortcut")
+            DispatchQueue.main.async {
+                self?.delegate?.didToggleChatWindow()
+            }
         }
         logStore.log("ChatWindowHotKey created: \(chatWindowHotKey != nil)", category: "GlobalShortcut")
         
-        let inputKeyCombo = KeyCombo(key: .i, modifiers: [.command, .option])
-        inputLauncherHotKey = HotKey(keyCombo: inputKeyCombo) { [weak self] in
-            self?.logStore.log("Cmd+Option+I検出: 入力ランチャー表示", category: "GlobalShortcut")
-            self?.delegate?.didShowInputLauncher()
+        let inputKeyCombo = KeyCombo(key: .i, modifiers: [.command, .shift])
+        inputLauncherHotKey = HotKey(keyCombo: inputKeyCombo)
+        inputLauncherHotKey?.keyDownHandler = { [weak self] in
+            self?.logStore.log("Cmd+Shift+I検出: 入力ランチャー表示", category: "GlobalShortcut")
+            DispatchQueue.main.async {
+                self?.delegate?.didShowInputLauncher()
+            }
         }
         logStore.log("InputLauncherHotKey created: \(inputLauncherHotKey != nil)", category: "GlobalShortcut")
         

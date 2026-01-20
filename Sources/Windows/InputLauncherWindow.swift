@@ -4,11 +4,14 @@ import SwiftUI
 class InputLauncherWindow: NSWindow {
     private let viewModel: OpenCodeViewModel
     
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+    
     init(viewModel: OpenCodeViewModel) {
         self.viewModel = viewModel
         
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 200),
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 240),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -20,6 +23,8 @@ class InputLauncherWindow: NSWindow {
     private func setupWindow() {
         isOpaque = false
         backgroundColor = .clear
+        hasShadow = true
+        isMovableByWindowBackground = true
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         
@@ -44,16 +49,23 @@ class InputLauncherWindow: NSWindow {
     }
     
     private func handleSendMessage() async {
+        let trimmedMessage = viewModel.inputMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMessage.isEmpty else { return }
         viewModel.logStore.log("入力ランチャー: 送信処理開始", category: "InputLauncherWindow")
-        await viewModel.sendMessage()
-        hide()
+        await viewModel.sendMessageWithAutoSession()
+        if viewModel.errorMessage == nil {
+            hide()
+        }
     }
     
     func show() {
         viewModel.logStore.log("InputLauncherWindow表示開始", category: "InputLauncherWindow")
+        
+        NSApp.activate(ignoringOtherApps: true)
         centerOnScreen()
         orderFrontRegardless()
         makeKey()
+        
         viewModel.logStore.log("InputLauncherWindow表示完了", category: "InputLauncherWindow")
     }
     

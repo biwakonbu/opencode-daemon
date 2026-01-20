@@ -50,9 +50,12 @@ class FloatingChatWindow: NSWindow {
     
     func show() {
         viewModel.logStore.log("FloatingChatWindow表示開始", category: "FloatingChatWindow")
+        
+        NSApp.activate(ignoringOtherApps: true)
         positionWindow()
         orderFrontRegardless()
         makeKey()
+        
         viewModel.logStore.log("FloatingChatWindow表示完了, 可視状態: \(isVisible)", category: "FloatingChatWindow")
     }
     

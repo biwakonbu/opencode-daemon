@@ -32,3 +32,6 @@ Package.resolved
 
 # ログ
 *.log
+
+# アプリバンドル
+OpenCodeMenuApp.app/

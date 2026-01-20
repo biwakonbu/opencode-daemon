@@ -147,12 +147,13 @@ graph TD
 
 ### Service Layer (追加)
 
-- `GlobalShortcutMonitor.swift`: グローバルショートカット監視
-  - Cmd+Shift+O: チャットウィンドウ切り替え
-  - Cmd+Shift+I: 入力ランチャー表示
-  - Shift+マウスドラッグ: 矩形選択開始
-  - ESC: 選択キャンセル
-  - アクセシビリティ権限の管理
+ - `GlobalShortcutMonitor.swift`: グローバルショートカット監視
+   - Cmd+Shift+O: チャットウィンドウ切り替え
+   - Cmd+Shift+I: 入力ランチャー表示
+   - Shift+マウスドラッグ: 矩形選択開始
+   - ESC: 選択キャンセル
+   - アクセシビリティ権限の管理
+   - HotKeyライブラリを使用したショートカット実装
 
 ## データフロー
 
@@ -235,9 +236,11 @@ ContentViewのUIが自動更新
   ↓
 GlobalShortcutMonitor.didToggleChatWindow() または MenuBarManager.showChatWindow()
   ↓
-WindowStateManager.toggleChatWindow()
+WindowStateManager.toggleChatWindow() (@MainActor)
   ↓
 チャットウィンドウの表示/非表示切り替え
+  ↓
+NSApp.activate()でアプリをアクティブ化
   ↓
 isChatWindowVisibleの更新 (@Published)
 ```
@@ -249,13 +252,17 @@ isChatWindowVisibleの更新 (@Published)
   ↓
 GlobalShortcutMonitor.didShowInputLauncher() または MenuBarManager.showInputLauncher()
   ↓
-WindowStateManager.showInputLauncher()
+WindowStateManager.showInputLauncher() (@MainActor)
   ↓
 チャットウィンドウが表示中の場合は非表示
+  ↓
+NSApp.activate()でアプリをアクティブ化
   ↓
 入力ランチャーを表示
   ↓
 画面中央に配置
+  ↓
+@FocusStateでテキストフィールドにフォーカス
 ```
 
 ## メモリ管理

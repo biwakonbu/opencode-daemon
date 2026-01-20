@@ -21,15 +21,21 @@ class MenuBarManager {
         
         statusItem?.button?.action = #selector(statusBarButtonClicked)
         statusItem?.button?.target = self
+        
+        createMenu()
+        
         logStore.log("MenuBarManager setup完了", category: "MenuBar")
     }
     
     @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
         logStore.log("メニューバーボタンクリック検出", category: "MenuBar")
-        showContextMenu()
+        
+        if let menu = statusItem?.menu, let button = statusItem?.button {
+            menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height), in: button)
+        }
     }
     
-    private func showContextMenu() {
+    private func createMenu() {
         let menu = NSMenu()
         
         let showChatItem = menu.addItem(withTitle: "チャットウィンドウを表示", action: #selector(showChatWindow), keyEquivalent: "o")
@@ -53,17 +59,23 @@ class MenuBarManager {
     
     @objc private func showChatWindow() {
         logStore.log("チャットウィンドウ表示メニュー選択", category: "MenuBar")
-        WindowStateManager.shared.showChatWindow()
+        Task { @MainActor in
+            WindowStateManager.shared.showChatWindow()
+        }
     }
     
     @objc private func showInputLauncher() {
         logStore.log("入力ランチャー表示メニュー選択", category: "MenuBar")
-        WindowStateManager.shared.showInputLauncher()
+        Task { @MainActor in
+            WindowStateManager.shared.showInputLauncher()
+        }
     }
     
     @objc private func restartApp() {
         logStore.log("再起動メニュー選択", category: "MenuBar")
-        WindowStateManager.shared.restartApp()
+        Task { @MainActor in
+            WindowStateManager.shared.restartApp()
+        }
     }
     
     @objc private func quitApp() {

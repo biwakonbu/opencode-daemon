@@ -61,6 +61,14 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             let globalShortcutMonitor = GlobalShortcutMonitor(logStore: logStore)
             globalShortcutMonitor.delegate = self
             self.globalShortcutMonitor = globalShortcutMonitor
+            
+            if !globalShortcutMonitor.checkAccessibilityPermissions() {
+                showAlert(
+                    title: "アクセシビリティ権限が必要",
+                    message: "スクリーンショット機能を使用するには、システム環境設定 > プライバシーとセキュリティ > アクセシビリティ でこのアプリを許可してください"
+                )
+            }
+            
             globalShortcutMonitor.startMonitoring()
             
             let mcpImageAnalyzer = MCPImageAnalyzer(
@@ -70,13 +78,6 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
                 logStore: logStore
             )
             self.mcpImageAnalyzer = mcpImageAnalyzer
-            
-            if !globalShortcutMonitor.checkAccessibilityPermissions() {
-                showAlert(
-                    title: "アクセシビリティ権限が必要",
-                    message: "スクリーンショット機能を使用するには、システム環境設定 > プライバシーとセキュリティ > アクセシビリティ でこのアプリを許可してください"
-                )
-            }
             
             logStore.log("アプリケーション初期化完了", category: "App")
             
@@ -106,13 +107,17 @@ extension AppDelegate: GlobalShortcutDelegate {
     func didToggleChatWindow() {
         logStore.log("チャットウィンドウ切り替えコールバック受信 (AppState)", category: "Shortcut")
         logStore.log("現在のスレッド: \(Thread.isMainThread)", category: "Shortcut")
-        WindowStateManager.shared.toggleChatWindow()
+        Task { @MainActor in
+            WindowStateManager.shared.toggleChatWindow()
+        }
     }
     
     func didShowInputLauncher() {
         logStore.log("入力ランチャー表示コールバック受信 (AppState)", category: "Shortcut")
         logStore.log("現在のスレッド: \(Thread.isMainThread)", category: "Shortcut")
-        WindowStateManager.shared.showInputLauncher()
+        Task { @MainActor in
+            WindowStateManager.shared.showInputLauncher()
+        }
     }
     
     func didCaptureRect(_ rect: CGRect) {
