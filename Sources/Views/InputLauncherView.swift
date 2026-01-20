@@ -7,35 +7,35 @@ struct InputLauncherView: View {
     @State private var isVisible = false
     let onSendMessage: () -> Void
     let onCancel: () -> Void
-    
+
     private var trimmedInput: String {
         viewModel.inputMessage.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
+
     private var hasPendingImage: Bool {
         viewModel.pendingImageData != nil
     }
-    
+
     private var pendingImage: NSImage? {
         guard let data = viewModel.pendingImageData else { return nil }
         return NSImage(data: data)
     }
-    
+
     private var isSendDisabled: Bool {
         (trimmedInput.isEmpty && !hasPendingImage) || viewModel.isLoading
     }
-    
+
     private var accentGradient: LinearGradient {
         LinearGradient(
             colors: [
                 Color(red: 0.18, green: 0.54, blue: 0.95),
-                Color(red: 0.22, green: 0.78, blue: 0.68)
+                Color(red: 0.22, green: 0.78, blue: 0.68),
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
     }
-    
+
     var body: some View {
         ZStack {
             launcherBackground
@@ -63,7 +63,7 @@ struct InputLauncherView: View {
             }
         }
     }
-    
+
     private var launcherBackground: some View {
         let cornerRadius: CGFloat = 24
         return ZStack {
@@ -77,21 +77,21 @@ struct InputLauncherView: View {
         }
         .shadow(color: Color.black.opacity(0.18), radius: 22, x: 0, y: 10)
     }
-    
+
     private var content: some View {
         VStack(spacing: 14) {
             headerView
-            
+
             if let image = pendingImage {
                 attachmentCard(image: image)
                     .transition(.opacity)
             }
-            
+
             if let errorMessage = viewModel.errorMessage {
                 errorBanner(errorMessage)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
-            
+
             inputField
             actionRow
             hintRow
@@ -99,7 +99,7 @@ struct InputLauncherView: View {
         .padding(22)
         .animation(.easeOut(duration: 0.2), value: viewModel.errorMessage)
     }
-    
+
     private var headerView: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -110,7 +110,7 @@ struct InputLauncherView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(accentGradient)
             }
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text("OpenCode ランチャー")
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
@@ -118,9 +118,9 @@ struct InputLauncherView: View {
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             HStack(spacing: 8) {
                 if viewModel.isLoading {
                     ProgressView()
@@ -130,7 +130,7 @@ struct InputLauncherView: View {
             }
         }
     }
-    
+
     private func errorBanner(_ message: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -148,7 +148,7 @@ struct InputLauncherView: View {
                     LinearGradient(
                         colors: [
                             Color(red: 0.86, green: 0.22, blue: 0.2),
-                            Color(red: 0.95, green: 0.48, blue: 0.2)
+                            Color(red: 0.95, green: 0.48, blue: 0.2),
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
@@ -160,7 +160,7 @@ struct InputLauncherView: View {
                 .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
         )
     }
-    
+
     private var inputField: some View {
         HStack(spacing: 10) {
             Image(systemName: "message.fill")
@@ -185,7 +185,7 @@ struct InputLauncherView: View {
                 .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
         )
     }
-    
+
     private var actionRow: some View {
         HStack(spacing: 12) {
             Button(action: onCancel) {
@@ -194,7 +194,7 @@ struct InputLauncherView: View {
             }
             .keyboardShortcut(.cancelAction)
             .buttonStyle(.bordered)
-            
+
             Button(action: onSendMessage) {
                 HStack(spacing: 6) {
                     if viewModel.isLoading {
@@ -210,9 +210,9 @@ struct InputLauncherView: View {
             .buttonStyle(.borderedProminent)
             .tint(Color(red: 0.18, green: 0.54, blue: 0.95))
             .disabled(isSendDisabled)
-            
+
             Spacer()
-            
+
             Button(action: {
                 Task {
                     await viewModel.attachScreenshotForPrompt()
@@ -224,7 +224,7 @@ struct InputLauncherView: View {
             .disabled(viewModel.isLoading)
         }
     }
-    
+
     private var hintRow: some View {
         HStack {
             Text("Enterで送信 / Escで閉じる")
@@ -234,7 +234,7 @@ struct InputLauncherView: View {
         .font(.system(size: 11, weight: .medium, design: .rounded))
         .foregroundColor(.secondary)
     }
-    
+
     private func attachmentCard(image: NSImage) -> some View {
         HStack(spacing: 12) {
             Image(nsImage: image)
@@ -246,7 +246,7 @@ struct InputLauncherView: View {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .strokeBorder(Color.white.opacity(0.4), lineWidth: 1)
                 )
-            
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("スクリーンショットを添付")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -254,9 +254,9 @@ struct InputLauncherView: View {
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             Button(action: {
                 viewModel.clearPendingImage()
             }) {
@@ -275,7 +275,7 @@ struct InputLauncherView: View {
                 .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
         )
     }
-    
+
     private var sessionBadge: some View {
         let isActive = viewModel.currentSession != nil
         return HStack(spacing: 6) {

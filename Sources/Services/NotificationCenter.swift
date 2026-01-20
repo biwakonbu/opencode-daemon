@@ -1,33 +1,33 @@
 import AppKit
 import Foundation
-import os.log
 import UserNotifications
+import os.log
 
 class NotificationCenterService {
     private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "NotificationCenter")
     private var isAuthorized = false
     private var notificationsEnabled = false
     private var useAlerts = false
-    
+
     init() {
         useAlerts = !isBundleAvailable()
     }
-    
+
     private func isBundleAvailable() -> Bool {
         let bundle = Bundle.main
         let url = bundle.bundleURL
         return url.pathExtension == "app" && bundle.bundleIdentifier != nil
     }
-    
+
     @MainActor
     func requestNotificationAuthorization() {
         guard !isAuthorized else { return }
-        
+
         if useAlerts {
             os_log("NSAlertを使用します", log: logger, type: .info)
             return
         }
-        
+
         do {
             let center = UNUserNotificationCenter.current()
             center.requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
@@ -48,7 +48,7 @@ class NotificationCenterService {
             useAlerts = true
         }
     }
-    
+
     @MainActor
     func sendSuccessNotification(title: String, message: String) {
         if useAlerts {
@@ -57,7 +57,7 @@ class NotificationCenterService {
             sendNotification(title: title, message: message, alertStyle: .informational)
         }
     }
-    
+
     @MainActor
     func sendErrorNotification(title: String, message: String) {
         if useAlerts {
@@ -66,7 +66,7 @@ class NotificationCenterService {
             sendNotification(title: title, message: message, alertStyle: .critical)
         }
     }
-    
+
     @MainActor
     func sendInfoNotification(title: String, message: String) {
         if useAlerts {
@@ -75,7 +75,7 @@ class NotificationCenterService {
             sendNotification(title: title, message: message, alertStyle: .informational)
         }
     }
-    
+
     @MainActor
     private func sendNotification(title: String, message: String, alertStyle: NSAlert.Style) {
         guard notificationsEnabled else {
@@ -83,18 +83,18 @@ class NotificationCenterService {
             showAlert(title: title, message: message, alertStyle: alertStyle)
             return
         }
-        
+
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = message
         content.sound = .default
-        
+
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
             content: content,
             trigger: nil
         )
-        
+
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 os_log("通知送信エラー: %@", log: self.logger, type: .error, error.localizedDescription)
@@ -107,7 +107,7 @@ class NotificationCenterService {
             }
         }
     }
-    
+
     @MainActor
     private func showAlert(title: String, message: String, alertStyle: NSAlert.Style) {
         let alert = NSAlert()

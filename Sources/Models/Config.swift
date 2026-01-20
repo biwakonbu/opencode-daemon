@@ -6,7 +6,7 @@ struct Config: Codable {
     var sessionTimeout: Int
     var defaultModelProvider: String?
     var defaultModelID: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case apiKey
         case apiEndpoint

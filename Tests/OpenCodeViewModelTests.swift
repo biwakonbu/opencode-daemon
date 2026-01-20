@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import OpenCodeMenuAppCore
 
 final class OpenCodeViewModelTests: XCTestCase {
@@ -12,9 +13,9 @@ final class OpenCodeViewModelTests: XCTestCase {
             logStore: RuntimeLogStore.shared
         )
         viewModel.inputMessage = "hello"
-        
+
         await viewModel.sendMessageWithAutoSession()
-        
+
         XCTAssertEqual(apiClient.createSessionCallCount, 1)
         XCTAssertEqual(apiClient.sendMessageRequests.count, 1)
         XCTAssertEqual(viewModel.messages.count, 2)
@@ -23,7 +24,7 @@ final class OpenCodeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.inputMessage, "")
         XCTAssertNil(viewModel.errorMessage)
     }
-    
+
     @MainActor
     func testSendMessageWithAutoSessionUsesExistingSession() async {
         let apiClient = StubAPIClient()
@@ -35,15 +36,15 @@ final class OpenCodeViewModelTests: XCTestCase {
         )
         viewModel.currentSession = OpenCodeSession(id: "session-1")
         viewModel.inputMessage = "existing session"
-        
+
         await viewModel.sendMessageWithAutoSession()
-        
+
         XCTAssertEqual(apiClient.createSessionCallCount, 0)
         XCTAssertEqual(apiClient.sendMessageRequests.count, 1)
         XCTAssertEqual(viewModel.messages.count, 2)
         XCTAssertNil(viewModel.errorMessage)
     }
-    
+
     @MainActor
     func testSendMessageWithAutoSessionStopsWhenSessionCreationFails() async {
         let apiClient = StubAPIClient(
@@ -56,15 +57,15 @@ final class OpenCodeViewModelTests: XCTestCase {
             logStore: RuntimeLogStore.shared
         )
         viewModel.inputMessage = "send"
-        
+
         await viewModel.sendMessageWithAutoSession()
-        
+
         XCTAssertEqual(apiClient.createSessionCallCount, 1)
         XCTAssertEqual(apiClient.sendMessageRequests.count, 0)
         XCTAssertEqual(viewModel.messages.count, 0)
         XCTAssertEqual(viewModel.errorMessage, "test error")
     }
-    
+
     @MainActor
     func testSendMessageWithAutoSessionSetsErrorWhenResponseEmpty() async {
         let apiClient = StubAPIClient(
@@ -78,13 +79,13 @@ final class OpenCodeViewModelTests: XCTestCase {
         )
         viewModel.currentSession = OpenCodeSession(id: "session-1")
         viewModel.inputMessage = "empty response"
-        
+
         await viewModel.sendMessageWithAutoSession()
-        
+
         XCTAssertEqual(viewModel.messages.count, 1)
         XCTAssertTrue(viewModel.errorMessage?.isEmpty == false)
     }
-    
+
     @MainActor
     func testCaptureAndSendScreenshotWithAutoSessionSendsMessage() async {
         let apiClient = StubAPIClient()
@@ -94,20 +95,20 @@ final class OpenCodeViewModelTests: XCTestCase {
             screenshotCapture: screenshot,
             logStore: RuntimeLogStore.shared
         )
-        
+
         await viewModel.captureAndSendScreenshotWithAutoSession()
-        
+
         XCTAssertEqual(apiClient.createSessionCallCount, 1)
         XCTAssertEqual(screenshot.captureScreenAsDataCallCount, 1)
         XCTAssertEqual(apiClient.sendMessageRequests.count, 1)
         XCTAssertEqual(viewModel.messages.count, 2)
         XCTAssertNil(viewModel.errorMessage)
-        
+
         let parts = apiClient.sendMessageRequests.first?.parts ?? []
         XCTAssertEqual(parts.first?.type, "text")
         XCTAssertTrue(parts.first?.text?.isEmpty == false)
     }
-    
+
     @MainActor
     func testCaptureAndSendScreenshotWithAutoSessionSetsErrorWhenCaptureFails() async {
         let apiClient = StubAPIClient()
@@ -117,13 +118,13 @@ final class OpenCodeViewModelTests: XCTestCase {
             screenshotCapture: screenshot,
             logStore: RuntimeLogStore.shared
         )
-        
+
         await viewModel.captureAndSendScreenshotWithAutoSession()
-        
+
         XCTAssertEqual(apiClient.sendMessageRequests.count, 0)
         XCTAssertEqual(viewModel.errorMessage, "capture failed")
     }
-    
+
     @MainActor
     func testSendLauncherPromptWithImageAndNoText() async {
         let apiClient = StubAPIClient()
@@ -135,15 +136,15 @@ final class OpenCodeViewModelTests: XCTestCase {
         )
         viewModel.setPendingImageData(Data([0x10, 0x11]))
         viewModel.inputMessage = ""
-        
+
         await viewModel.sendLauncherPrompt()
-        
+
         XCTAssertEqual(apiClient.sendMessageRequests.count, 1)
         XCTAssertNil(viewModel.pendingImageData)
         XCTAssertEqual(viewModel.messages.count, 2)
         XCTAssertNil(viewModel.errorMessage)
     }
-    
+
     @MainActor
     func testSendLauncherPromptWithImageAndText() async {
         let apiClient = StubAPIClient()
@@ -155,15 +156,15 @@ final class OpenCodeViewModelTests: XCTestCase {
         )
         viewModel.setPendingImageData(Data([0x10, 0x11]))
         viewModel.inputMessage = "please analyze"
-        
+
         await viewModel.sendLauncherPrompt()
-        
+
         XCTAssertEqual(apiClient.sendMessageRequests.count, 1)
         XCTAssertNil(viewModel.pendingImageData)
         XCTAssertEqual(viewModel.messages.count, 2)
         XCTAssertTrue(viewModel.messages.first?.content.contains("please analyze") == true)
     }
-    
+
     @MainActor
     func testSendLauncherPromptWithNoImageAndNoTextDoesNothing() async {
         let apiClient = StubAPIClient()
@@ -173,9 +174,9 @@ final class OpenCodeViewModelTests: XCTestCase {
             screenshotCapture: screenshot,
             logStore: RuntimeLogStore.shared
         )
-        
+
         await viewModel.sendLauncherPrompt()
-        
+
         XCTAssertEqual(apiClient.sendMessageRequests.count, 0)
         XCTAssertEqual(viewModel.messages.count, 0)
     }
@@ -186,7 +187,7 @@ private final class StubAPIClient: OpenCodeAPIClientProtocol {
     var sendMessageRequests: [SendMessageRequest] = []
     private let createSessionResult: Result<OpenCodeSession, Error>
     private let sendMessageResult: Result<SendMessageResponse, Error>
-    
+
     init(
         createSessionResult: Result<OpenCodeSession, Error> = .success(OpenCodeSession(id: "session-1")),
         sendMessageResult: Result<SendMessageResponse, Error> = .success(makeResponse(content: "OK"))
@@ -194,12 +195,12 @@ private final class StubAPIClient: OpenCodeAPIClientProtocol {
         self.createSessionResult = createSessionResult
         self.sendMessageResult = sendMessageResult
     }
-    
+
     func createSession() async throws -> OpenCodeSession {
         createSessionCallCount += 1
         return try createSessionResult.get()
     }
-    
+
     func sendMessage(_ request: SendMessageRequest) async throws -> SendMessageResponse {
         sendMessageRequests.append(request)
         return try sendMessageResult.get()
@@ -209,11 +210,11 @@ private final class StubAPIClient: OpenCodeAPIClientProtocol {
 private final class StubScreenshotCapture: ScreenshotCapturing {
     var captureScreenAsDataCallCount = 0
     private let result: Result<Data, Error>
-    
+
     init(result: Result<Data, Error>) {
         self.result = result
     }
-    
+
     func captureScreenAsData() throws -> Data {
         captureScreenAsDataCallCount += 1
         return try result.get()
@@ -222,7 +223,7 @@ private final class StubScreenshotCapture: ScreenshotCapturing {
 
 private struct TestError: LocalizedError {
     let message: String
-    
+
     var errorDescription: String? {
         message
     }
@@ -230,16 +231,16 @@ private struct TestError: LocalizedError {
 
 private func makeResponse(content: String) -> SendMessageResponse {
     let json = """
-    {"info":{"id":"resp-1","role":"assistant","time":{"created":1700000000}},"parts":[{"type":"text","text":"\(content)"}]}
-    """
+        {"info":{"id":"resp-1","role":"assistant","time":{"created":1700000000}},"parts":[{"type":"text","text":"\(content)"}]}
+        """
     let data = json.data(using: .utf8) ?? Data()
     return (try? JSONDecoder().decode(SendMessageResponse.self, from: data)) ?? fallbackResponse()
 }
 
 private func fallbackResponse() -> SendMessageResponse {
     let json = """
-    {"info":{"id":"resp-2","role":"assistant","time":{"created":1700000000}},"parts":[{"type":"text","text":"OK"}]}
-    """
+        {"info":{"id":"resp-2","role":"assistant","time":{"created":1700000000}},"parts":[{"type":"text","text":"OK"}]}
+        """
     let data = json.data(using: .utf8) ?? Data()
     return try! JSONDecoder().decode(SendMessageResponse.self, from: data)
 }

@@ -3,7 +3,8 @@ set -euo pipefail
 
 echo "===== Pre-commit Hook ====="
 
-swift_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.swift$' || true)
+swift_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.swift$' || true)
+
 if [[ -z "$swift_files" ]]; then
   echo "No Swift files to check. Skipping pre-commit hook."
   exit 0
