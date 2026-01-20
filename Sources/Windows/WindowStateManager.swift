@@ -1,6 +1,5 @@
 import Cocoa
 import SwiftUI
-import os.log
 
 class WindowStateManager: ObservableObject {
     static let shared = WindowStateManager()
@@ -10,8 +9,6 @@ class WindowStateManager: ObservableObject {
     private var floatingChatWindow: FloatingChatWindow?
     private var inputLauncherWindow: InputLauncherWindow?
     private var viewModel: OpenCodeViewModel?
-    
-    private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "WindowManager")
     
     private init() {}
     
@@ -71,32 +68,20 @@ class WindowStateManager: ObservableObject {
         let logStore = viewModel?.logStore ?? RuntimeLogStore.shared
         logStore.log("アプリ再起動開始", category: "WindowManager")
         
-        guard let appBundlePath = Bundle.main.bundlePath else {
-            logStore.log("バンドルパスが取得できません", level: .error, category: "WindowManager")
-            return
-        }
-        
+        let appBundlePath = Bundle.main.bundlePath
         logStore.log("バンドルパス: \(appBundlePath)", category: "WindowManager")
         
         let task = Process()
         task.launchPath = "/usr/bin/open"
         task.arguments = ["-n", appBundlePath]
         
-        task.terminationHandler = { status in
-            logStore.log("openコマンド終了, ステータス: \(status)", category: "WindowManager")
+        task.terminationHandler = { _ in
+            logStore.log("openコマンド終了", category: "WindowManager")
+            logStore.log("openコマンド成功, 既存プロセスを確認して終了します", category: "WindowManager")
             
-            if status == 0 {
-                logStore.log("openコマンド成功, 既存プロセスを確認して終了します", category: "WindowManager")
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    logStore.log("アプリを終了します", category: "WindowManager")
-                    NSApplication.shared.terminate(nil)
-                }
-            } else {
-                logStore.log("openコマンド失敗(ステータス: \(status)), アプリを終了します", level: .error, category: "WindowManager")
-                DispatchQueue.main.async {
-                    NSApplication.shared.terminate(nil)
-                }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                logStore.log("アプリを終了します", category: "WindowManager")
+                NSApplication.shared.terminate(nil)
             }
         }
         
