@@ -11,7 +11,7 @@ class InputLauncherWindow: NSWindow {
         self.viewModel = viewModel
         
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 240),
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 320),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -50,9 +50,9 @@ class InputLauncherWindow: NSWindow {
     
     private func handleSendMessage() async {
         let trimmedMessage = viewModel.inputMessage.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedMessage.isEmpty else { return }
+        guard viewModel.pendingImageData != nil || !trimmedMessage.isEmpty else { return }
         viewModel.logStore.log("入力ランチャー: 送信処理開始", category: "InputLauncherWindow")
-        await viewModel.sendMessageWithAutoSession()
+        await viewModel.sendLauncherPrompt()
         if viewModel.errorMessage == nil {
             hide()
         }
@@ -63,8 +63,8 @@ class InputLauncherWindow: NSWindow {
         
         NSApp.activate(ignoringOtherApps: true)
         centerOnScreen()
-        orderFrontRegardless()
-        makeKey()
+        makeKeyAndOrderFront(nil)
+        NotificationCenter.default.post(name: .inputLauncherFocusRequested, object: self)
         
         viewModel.logStore.log("InputLauncherWindow表示完了", category: "InputLauncherWindow")
     }

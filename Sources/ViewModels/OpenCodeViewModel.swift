@@ -15,6 +15,7 @@ class OpenCodeViewModel: ObservableObject {
     @Published var inputMessage: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var pendingImageData: Data?
     
     init(apiClient: OpenCodeAPIClientProtocol, screenshotCapture: ScreenshotCapturing, logStore: RuntimeLogStore) {
         self.apiClient = apiClient
@@ -147,12 +148,34 @@ class OpenCodeViewModel: ObservableObject {
         guard await ensureSessionExists() else { return }
         await captureAndSendScreenshot()
     }
+
+    func attachScreenshotForPrompt() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            let imageData = try screenshotCapture.captureScreenAsData()
+            pendingImageData = imageData
+        } catch {
+            errorMessage = error.localizedDescription
+            logStore.log("スクリーンショット添付失敗: \(error.localizedDescription)", level: .error, category: "ViewModel")
+        }
+        isLoading = false
+    }
     
     func clearSession() {
         currentSession = nil
         messages = []
         errorMessage = nil
         logStore.log("セッションをクリアしました", category: "ViewModel")
+    }
+
+    func setPendingImageData(_ imageData: Data) {
+        pendingImageData = imageData
+        errorMessage = nil
+    }
+
+    func clearPendingImage() {
+        pendingImageData = nil
     }
     
     func ensureSessionExists(imageData: Data? = nil) async -> Bool {
@@ -167,7 +190,7 @@ class OpenCodeViewModel: ObservableObject {
         messages.append(message)
     }
     
-    func sendImageWithAutoSession(imageData: Data) async {
+    func sendImageWithAutoSession(imageData: Data, userPrompt: String? = nil) async {
         isLoading = true
         errorMessage = nil
         
@@ -191,8 +214,21 @@ class OpenCodeViewModel: ObservableObject {
                 filename: "screenshot.png"
             )
             
+            let trimmedPrompt = (userPrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let userRequestHeader: String
+            if trimmedPrompt.isEmpty {
+                userRequestHeader = "次のスクリーンショットを分析してください。"
+            } else {
+                userRequestHeader = """
+                次のスクリーンショットについて、ユーザーの依頼に従ってください。
+                
+                ユーザーの依頼:
+                \(trimmedPrompt)
+                """
+            }
+            
             let userText = """
-            次のスクリーンショットを分析してください。
+            \(userRequestHeader)
             
             必要に応じて以下のMCPツールを自動で選択して使用してください：
             - zai-mcp-server_analyze_image: 一般的な画像分析
@@ -213,10 +249,16 @@ class OpenCodeViewModel: ObservableObject {
             
             let response = try await apiClient.sendMessage(request)
             
+            let userMessageContent: String
+            if trimmedPrompt.isEmpty {
+                userMessageContent = "スクリーンショットを送信しました"
+            } else {
+                userMessageContent = "スクリーンショット: \(trimmedPrompt)"
+            }
             let userMessage = OpenCodeMessage(
                 id: UUID().uuidString,
                 sessionId: session.id,
-                content: "スクリーンショットを送信しました",
+                content: userMessageContent,
                 role: "user"
             )
             messages.append(userMessage)
@@ -243,6 +285,22 @@ class OpenCodeViewModel: ObservableObject {
         }
         
         isLoading = false
+    }
+
+    func sendLauncherPrompt() async {
+        let trimmedPrompt = inputMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard pendingImageData != nil || !trimmedPrompt.isEmpty else { return }
+        
+        if let imageData = pendingImageData {
+            inputMessage = ""
+            let promptToSend = trimmedPrompt.isEmpty ? nil : trimmedPrompt
+            await sendImageWithAutoSession(imageData: imageData, userPrompt: promptToSend)
+            if errorMessage == nil {
+                pendingImageData = nil
+            }
+        } else {
+            await sendMessageWithAutoSession()
+        }
     }
     
     private func encodeImageData(_ data: Data) -> String {

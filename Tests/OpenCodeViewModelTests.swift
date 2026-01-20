@@ -123,6 +123,62 @@ final class OpenCodeViewModelTests: XCTestCase {
         XCTAssertEqual(apiClient.sendMessageRequests.count, 0)
         XCTAssertEqual(viewModel.errorMessage, "capture failed")
     }
+    
+    @MainActor
+    func testSendLauncherPromptWithImageAndNoText() async {
+        let apiClient = StubAPIClient()
+        let screenshot = StubScreenshotCapture(result: .success(Data([0x01])))
+        let viewModel = OpenCodeViewModel(
+            apiClient: apiClient,
+            screenshotCapture: screenshot,
+            logStore: RuntimeLogStore.shared
+        )
+        viewModel.setPendingImageData(Data([0x10, 0x11]))
+        viewModel.inputMessage = ""
+        
+        await viewModel.sendLauncherPrompt()
+        
+        XCTAssertEqual(apiClient.sendMessageRequests.count, 1)
+        XCTAssertNil(viewModel.pendingImageData)
+        XCTAssertEqual(viewModel.messages.count, 2)
+        XCTAssertNil(viewModel.errorMessage)
+    }
+    
+    @MainActor
+    func testSendLauncherPromptWithImageAndText() async {
+        let apiClient = StubAPIClient()
+        let screenshot = StubScreenshotCapture(result: .success(Data([0x01])))
+        let viewModel = OpenCodeViewModel(
+            apiClient: apiClient,
+            screenshotCapture: screenshot,
+            logStore: RuntimeLogStore.shared
+        )
+        viewModel.setPendingImageData(Data([0x10, 0x11]))
+        viewModel.inputMessage = "please analyze"
+        
+        await viewModel.sendLauncherPrompt()
+        
+        XCTAssertEqual(apiClient.sendMessageRequests.count, 1)
+        XCTAssertNil(viewModel.pendingImageData)
+        XCTAssertEqual(viewModel.messages.count, 2)
+        XCTAssertTrue(viewModel.messages.first?.content.contains("please analyze") == true)
+    }
+    
+    @MainActor
+    func testSendLauncherPromptWithNoImageAndNoTextDoesNothing() async {
+        let apiClient = StubAPIClient()
+        let screenshot = StubScreenshotCapture(result: .success(Data([0x01])))
+        let viewModel = OpenCodeViewModel(
+            apiClient: apiClient,
+            screenshotCapture: screenshot,
+            logStore: RuntimeLogStore.shared
+        )
+        
+        await viewModel.sendLauncherPrompt()
+        
+        XCTAssertEqual(apiClient.sendMessageRequests.count, 0)
+        XCTAssertEqual(viewModel.messages.count, 0)
+    }
 }
 
 private final class StubAPIClient: OpenCodeAPIClientProtocol {

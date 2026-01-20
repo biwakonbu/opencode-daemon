@@ -71,8 +71,8 @@ xed .
 # SwiftLint (Homebrew)
 brew install swiftlint
 
-# SwiftFormat (Mint)
-mint install nicklockwood/SwiftFormat
+# swift-format (Xcode / Swift toolchain)
+# Xcode 15+ には `swift format` が含まれます
 
 # jq (JSON処理)
 brew install jq
@@ -101,7 +101,14 @@ chrome-to-opencode/
 │   ├── Views/
 │   │   └── ContentView.swift
 │   └── OpenCodeApp.swift
+├── Scripts/
+│   ├── format.sh
+│   └── lint.sh
+├── .githooks/
+│   └── pre-commit
 ├── Package.swift
+├── .swift-format
+├── .swiftlint.yml
 ├── .config.json
 ├── .gitignore
 ├── README.md
@@ -360,8 +367,10 @@ lldb ./OpenCodeApp
 ### SwiftLint
 
 ```bash
+# 設定ファイル: .swiftlint.yml
+
 # SwiftLintの実行
-swiftlint
+./Scripts/lint.sh
 
 # 自動修正
 swiftlint --fix
@@ -370,15 +379,26 @@ swiftlint --fix
 swiftlint lint --path Sources/Models/Config.swift
 ```
 
-### SwiftFormat
+### swift-format
 
 ```bash
+# 設定ファイル: .swift-format
+
 # コードのフォーマット
-swift format Sources/
+./Scripts/format.sh
 
 # 特定のファイル
-swift format Sources/App/AppDelegate.swift
+swift format format --in-place --configuration .swift-format Sources/App/AppDelegate.swift
 ```
+
+### Git Hooks
+
+```bash
+# フックの有効化
+git config core.hooksPath .githooks
+```
+
+pre-commitでSwiftLintとswift-format(lint)を実行します（Swiftファイルが変更されている場合のみ）。
 
 ### ビルド時の警告を修正
 

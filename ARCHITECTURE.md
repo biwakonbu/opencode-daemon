@@ -43,7 +43,7 @@ graph TD
 - `OpenCodeViewModel.swift`: メインビューモデル
   - セッション管理
   - メッセージ送信
-  - スクリーンショット送信
+  - スクリーンショット添付/送信
   - エラーハンドリング
 
 **特性**:
@@ -150,7 +150,7 @@ graph TD
  - `GlobalShortcutMonitor.swift`: グローバルショートカット監視
    - Cmd+Shift+O: チャットウィンドウ切り替え
    - Cmd+Shift+I: 入力ランチャー表示
-   - Shift+マウスドラッグ: 矩形選択開始
+   - Shift+マウスドラッグ: 矩形選択スクリーンショット（入力ランチャーを表示）
    - ESC: 選択キャンセル
    - アクセシビリティ権限の管理
    - HotKeyライブラリを使用したショートカット実装
@@ -201,32 +201,32 @@ ViewModelのmessagesに追加 (@Published)
 ContentViewのUIが自動更新 (ScrollView)
 ```
 
-### スクリーンショット送信フロー
+### スクリーンショット添付/送信フロー
 
 ```
-ユーザーアクション (カメラアイコンクリック)
+ユーザーアクション (Shift+マウスドラッグ)
   ↓
-ContentView (ボタンタップ)
+GlobalShortcutMonitor.didCaptureRect()
   ↓
-OpenCodeViewModel.captureAndSendScreenshot()
+AppDelegate.handleRectCapture()
   ↓
-ScreenshotCapture.captureScreenAsData()
+ScreenshotRectCapture.captureRectAsData()
   ↓
-画像データ生成 (PNG形式)
+OpenCodeViewModel.setPendingImageData()
   ↓
-Base64エンコード
+WindowStateManager.showInputLauncher()
   ↓
-メッセージ作成
+InputLauncherView (スクリーンショット添付表示)
+  ↓
+OpenCodeViewModel.sendLauncherPrompt()
   ↓
 OpenCodeAPIClient.sendMessage()
-  ↓
-OpenCodeAPIへのリクエスト (メッセージ)
   ↓
 OpenCodeAPIからのレスポンス
   ↓
 ViewModelのmessagesに追加 (@Published)
-   ↓
-ContentViewのUIが自動更新
+  ↓
+FloatingChatViewのUIが自動更新
 ```
 
 ### チャットウィンドウ表示フロー

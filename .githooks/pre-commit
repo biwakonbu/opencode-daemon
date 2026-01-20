@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+swift_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.swift$' || true)
+if [[ -z "$swift_files" ]]; then
+  exit 0
+fi
+
+echo "Running SwiftLint..."
+./Scripts/lint.sh
+
+echo "Running swift-format (lint)..."
+if ! swift format --version >/dev/null 2>&1; then
+  echo "swift format not available. install with Xcode 15+ or a Swift toolchain." >&2
+  exit 1
+fi
+
+swift format lint --recursive --configuration .swift-format Sources Tests

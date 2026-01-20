@@ -23,6 +23,7 @@ DerivedData
 .build/
 Package.resolved
 *.xcodeproj
+.swiftlint_cache/
 
 # AppCode
 .idea/

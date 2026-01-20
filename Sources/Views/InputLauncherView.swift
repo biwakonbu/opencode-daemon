@@ -12,8 +12,17 @@ struct InputLauncherView: View {
         viewModel.inputMessage.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
+    private var hasPendingImage: Bool {
+        viewModel.pendingImageData != nil
+    }
+    
+    private var pendingImage: NSImage? {
+        guard let data = viewModel.pendingImageData else { return nil }
+        return NSImage(data: data)
+    }
+    
     private var isSendDisabled: Bool {
-        trimmedInput.isEmpty || viewModel.isLoading
+        (trimmedInput.isEmpty && !hasPendingImage) || viewModel.isLoading
     }
     
     private var accentGradient: LinearGradient {
@@ -36,13 +45,22 @@ struct InputLauncherView: View {
         }
         .padding(16)
         .onAppear {
-            isFocused = true
+            DispatchQueue.main.async {
+                isFocused = true
+            }
             withAnimation(.easeOut(duration: 0.25)) {
                 isVisible = true
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
-            isFocused = true
+            DispatchQueue.main.async {
+                isFocused = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .inputLauncherFocusRequested)) { _ in
+            DispatchQueue.main.async {
+                isFocused = true
+            }
         }
     }
     
@@ -63,6 +81,11 @@ struct InputLauncherView: View {
     private var content: some View {
         VStack(spacing: 14) {
             headerView
+            
+            if let image = pendingImage {
+                attachmentCard(image: image)
+                    .transition(.opacity)
+            }
             
             if let errorMessage = viewModel.errorMessage {
                 errorBanner(errorMessage)
@@ -148,7 +171,7 @@ struct InputLauncherView: View {
                 .focused($isFocused)
                 .font(.system(size: 15, weight: .medium, design: .rounded))
                 .onSubmit {
-                    guard !trimmedInput.isEmpty else { return }
+                    guard !trimmedInput.isEmpty || hasPendingImage else { return }
                     onSendMessage()
                 }
         }
@@ -192,10 +215,7 @@ struct InputLauncherView: View {
             
             Button(action: {
                 Task {
-                    await viewModel.captureAndSendScreenshotWithAutoSession()
-                    if viewModel.errorMessage == nil {
-                        onCancel()
-                    }
+                    await viewModel.attachScreenshotForPrompt()
                 }
             }) {
                 Label("スクリーンショット", systemImage: "camera")
@@ -213,6 +233,47 @@ struct InputLauncherView: View {
         }
         .font(.system(size: 11, weight: .medium, design: .rounded))
         .foregroundColor(.secondary)
+    }
+    
+    private func attachmentCard(image: NSImage) -> some View {
+        HStack(spacing: 12) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 120, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.4), lineWidth: 1)
+                )
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("スクリーンショットを添付")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                Text("このまま送信できます")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Button(action: {
+                viewModel.clearPendingImage()
+            }) {
+                Text("削除")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.thinMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+        )
     }
     
     private var sessionBadge: some View {

@@ -117,6 +117,10 @@
 - SwiftLintのルールに従う
 - 適切なアクセス修飾子を使用
 
+#### Lint / Format
+- SwiftLint: `.swiftlint.yml` を使用し `./Scripts/lint.sh` で実行
+- swift-format: `.swift-format` を使用し `./Scripts/format.sh` で実行
+
 #### 命名規則
 - クラス/構造体: PascalCase
 - メソッド/プロパティ: camelCase
@@ -140,6 +144,10 @@
 #### コミットメッセージ規約
 - セマンティックコミットメッセージを使用
 - 日本語で記述
+
+#### Git Hooks
+- pre-commit: `.githooks/pre-commit`
+- 設定: `git config core.hooksPath .githooks`
 
 例：
 ```

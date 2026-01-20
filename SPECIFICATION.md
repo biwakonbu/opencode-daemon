@@ -9,7 +9,7 @@ OpenCodeMenuAppの技術仕様について説明します。
 
 ## 概要
 
-OpenCodeMenuAppはmacOSメニューバーで動作するOpenCode API連携アプリケーションです。スクリーンショットの自動取得、AIとの対話、Mac操作の自動化をサポートします。
+OpenCodeMenuAppはmacOSメニューバーで動作するOpenCode API連携アプリケーションです。スクリーンショット取得と添付、AIとの対話、Mac操作の自動化をサポートします。
 
 ## システム要件
 
@@ -85,7 +85,7 @@ super.init(
 ### 入力ランチャーウィンドウ
 
 - **ファイル名**: `InputLauncherWindow.swift`
-- **サイズ**: 560x240ピクセル
+- **サイズ**: 560x320ピクセル
 - **リサイズ**: 不可
 - **位置**: 画面中央
 - **ウィンドウレベル**: `.floating`（最前面表示）
@@ -96,11 +96,12 @@ super.init(
   - 送信成功時に自動クローズ
   - キャンセルまたはESCでクローズ
   - テキストフィールドに自動フォーカス（`@FocusState`）
+  - スクリーンショット添付時はテキストなしでも送信可能
 
 **初期化**:
 ```swift
 super.init(
-    contentRect: NSRect(x: 0, y: 0, width: 560, height: 240),
+    contentRect: NSRect(x: 0, y: 0, width: 560, height: 320),
     styleMask: [.borderless],
     backing: .buffered,
     defer: false
@@ -111,9 +112,9 @@ super.init(
 1. `WindowStateManager.showInputLauncher()`が呼ばれる
 2. チャットウィンドウが表示中の場合は非表示にする
 3. `NSApp.activate(ignoringOtherApps: true)`でアプリをアクティブ化
-4. `orderFrontRegardless()`でウィンドウを表示
-5. `makeKey()`でキーボードフォーカスを取得
-6. SwiftUIの`@FocusState`でテキストフィールドにフォーカス
+4. `makeKeyAndOrderFront(nil)`でウィンドウを表示
+5. SwiftUIの`@FocusState`でテキストフィールドにフォーカス
+6. 必要に応じてフォーカス要求通知を送信
 
 ## グローバルショートカット
 
@@ -123,7 +124,7 @@ super.init(
 |--------------|------|
 | Cmd+Shift+O | チャットウィンドウの表示/非表示切り替え |
 | Cmd+Shift+I | 入力ランチャーの表示 |
-| Shift+マウスドラッグ | 矩形選択スクリーンショット開始 |
+| Shift+マウスドラッグ | 矩形選択スクリーンショット（入力ランチャーを表示） |
 | ESC | 矩形選択キャンセル |
 
 ### 実装
@@ -226,7 +227,8 @@ let trusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
 2. マウスダウンでオーバーレイを表示
 3. マウスドラッグで矩形選択
 4. マウスアップで選択範囲をキャプチャ
-5. OpenCode APIに送信
+5. 入力ランチャーにスクリーンショットを添付
+6. テキストあり/なしで送信可能
 
 **最小サイズ**: 50x50ピクセル
 

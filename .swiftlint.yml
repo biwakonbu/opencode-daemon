@@ -1,0 +1,54 @@
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+  - .swiftpm
+  - OpenCodeMenuApp.app
+  - Package.swift
+  - Scripts
+
+cache_path: .swiftlint_cache
+
+line_length:
+  warning: 220
+  error: 260
+  ignores_comments: true
+  ignores_urls: true
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  excluded:
+    - id
+    - x
+    - y
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 50
+    error: 60
+
+disabled_rules:
+  - cyclomatic_complexity
+  - force_cast
+  - force_try
+  - function_body_length
+  - multiple_closures_with_trailing_closure
+  - nesting
+  - todo
+  - trailing_whitespace
+  - type_body_length
+  - unused_closure_parameter
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - explicit_init
+  - first_where
+  - operator_usage_whitespace
+  - redundant_nil_coalescing
+  - trailing_closure

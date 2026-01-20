@@ -126,12 +126,13 @@ extension AppDelegate: GlobalShortcutDelegate {
         }
     }
     
+    @MainActor
     private func handleRectCapture(_ rect: CGRect) async {
         logStore.log("矩形キャプチャ検出: \(rect)", category: "Capture")
         
         guard let mainScreen = NSScreen.main else {
             logStore.log("メインスクリーンが見つかりません", level: .error, category: "Capture")
-            await notificationCenter?.sendErrorNotification(title: "エラー", message: "メインスクリーンが見つかりません")
+            notificationCenter?.sendErrorNotification(title: "エラー", message: "メインスクリーンが見つかりません")
             return
         }
         
@@ -139,10 +140,11 @@ extension AppDelegate: GlobalShortcutDelegate {
             let rectCapture = ScreenshotRectCapture()
             let imageData = try rectCapture.captureRectAsData(rect, from: mainScreen)
             logStore.log("キャプチャ成功: \(imageData.count) bytes", category: "Capture")
-            await mcpImageAnalyzer?.sendImageWithAutoSession(imageData: imageData)
+            viewModel?.setPendingImageData(imageData)
+            WindowStateManager.shared.showInputLauncher()
         } catch {
             logStore.log("キャプチャ失敗: \(error.localizedDescription)", level: .error, category: "Capture")
-            await notificationCenter?.sendErrorNotification(title: "エラー", message: "スクリーンショットの取得に失敗しました")
+            notificationCenter?.sendErrorNotification(title: "エラー", message: "スクリーンショットの取得に失敗しました")
         }
     }
 }
