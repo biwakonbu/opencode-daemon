@@ -1,7 +1,7 @@
 import Foundation
 import os.log
 
-class OpenCodeAPIClient {
+class OpenCodeAPIClient: OpenCodeAPIClientProtocol {
     private var config: Config?
     private let session: URLSession
     private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "APIClient")

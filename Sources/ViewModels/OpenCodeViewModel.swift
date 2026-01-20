@@ -4,8 +4,8 @@ import os.log
 
 @MainActor
 class OpenCodeViewModel: ObservableObject {
-    private let apiClient: OpenCodeAPIClient
-    private let screenshotCapture: ScreenshotCapture
+    private let apiClient: OpenCodeAPIClientProtocol
+    private let screenshotCapture: ScreenshotCapturing
     let logStore: RuntimeLogStore
     private var cancellables = Set<AnyCancellable>()
     private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "ViewModel")
@@ -16,7 +16,7 @@ class OpenCodeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
-    init(apiClient: OpenCodeAPIClient, screenshotCapture: ScreenshotCapture, logStore: RuntimeLogStore) {
+    init(apiClient: OpenCodeAPIClientProtocol, screenshotCapture: ScreenshotCapturing, logStore: RuntimeLogStore) {
         self.apiClient = apiClient
         self.screenshotCapture = screenshotCapture
         self.logStore = logStore

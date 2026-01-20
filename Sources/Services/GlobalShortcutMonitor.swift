@@ -128,8 +128,8 @@ class GlobalShortcutMonitor {
         overlay = nil
     }
     
-    func checkAccessibilityPermissions() -> Bool {
-        let options: [String: Any] = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+    func checkAccessibilityPermissions(prompt: Bool = true) -> Bool {
+        let options: [String: Any] = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: prompt]
         let trusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
         
         if !trusted {

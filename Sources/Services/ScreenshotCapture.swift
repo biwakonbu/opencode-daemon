@@ -1,7 +1,7 @@
 import AppKit
 import CoreGraphics
 
-class ScreenshotCapture {
+class ScreenshotCapture: ScreenshotCapturing {
     
     func captureScreen() throws -> NSImage {
         guard let mainScreen = NSScreen.main else {

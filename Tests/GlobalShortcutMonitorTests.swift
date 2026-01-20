@@ -37,7 +37,7 @@ class GlobalShortcutMonitorTests: XCTestCase {
     }
     
     func testAccessibilityPermissions() {
-        let hasPermissions = monitor.checkAccessibilityPermissions()
+        let hasPermissions = monitor.checkAccessibilityPermissions(prompt: false)
         
         XCTAssertNotNil(hasPermissions)
     }
