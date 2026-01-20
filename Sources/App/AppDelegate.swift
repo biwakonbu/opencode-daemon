@@ -65,11 +65,10 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
                 viewModel: viewModel,
                 configResult: configResult,
                 resolvedEndpoint: resolvedEndpoint,
-                appLaunchDate: appLaunchDate,
-                checkAccessibilityPermission: { [weak globalShortcutMonitor] in
-                    globalShortcutMonitor?.checkAccessibilityPermissions(prompt: false) ?? false
-                }
-            )
+                appLaunchDate: appLaunchDate
+            ) { [weak globalShortcutMonitor] in
+                globalShortcutMonitor?.checkAccessibilityPermissions(prompt: false) ?? false
+            }
             self.menuBarManager = menuBarManager
             menuBarManager.setup()
 
