@@ -14,6 +14,7 @@ class ScreenshotRectCapture {
             height: rect.height
         )
 
+        // TODO: ScreenCaptureKitへの移行 (v1.1で計画中)
         guard let cgImage = CGWindowListCreateImage(screenRect, .optionOnScreenOnly, kCGNullWindowID, .bestResolution) else {
             throw ScreenshotError.captureFailed
         }

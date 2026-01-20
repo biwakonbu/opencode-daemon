@@ -5,10 +5,25 @@ class MenuBarManager {
     private var statusItem: NSStatusItem?
     private let viewModel: OpenCodeViewModel
     private let logStore: RuntimeLogStore
+    private let configResult: ConfigLoadResult
+    private let resolvedEndpoint: String
+    private let appLaunchDate: Date
+    private let checkAccessibilityPermission: () -> Bool
+    private var statusWindow: AppStatusWindow?
 
-    init(viewModel: OpenCodeViewModel) {
+    init(
+        viewModel: OpenCodeViewModel,
+        configResult: ConfigLoadResult,
+        resolvedEndpoint: String,
+        appLaunchDate: Date,
+        checkAccessibilityPermission: @escaping () -> Bool
+    ) {
         self.viewModel = viewModel
         self.logStore = .shared
+        self.configResult = configResult
+        self.resolvedEndpoint = resolvedEndpoint
+        self.appLaunchDate = appLaunchDate
+        self.checkAccessibilityPermission = checkAccessibilityPermission
     }
 
     func setup() {
@@ -44,6 +59,9 @@ class MenuBarManager {
         let showInputItem = menu.addItem(withTitle: "入力ランチャーを表示", action: #selector(showInputLauncher), keyEquivalent: "i")
         showInputItem.target = self
 
+        let showStatusItem = menu.addItem(withTitle: "設定と状態を表示", action: #selector(showStatusWindow), keyEquivalent: "")
+        showStatusItem.target = self
+
         menu.addItem(NSMenuItem.separator())
 
         let restartItem = menu.addItem(withTitle: "再起動", action: #selector(restartApp), keyEquivalent: "")
@@ -68,6 +86,24 @@ class MenuBarManager {
         logStore.log("入力ランチャー表示メニュー選択", category: "MenuBar")
         Task { @MainActor in
             WindowStateManager.shared.showInputLauncher()
+        }
+    }
+
+    @objc private func showStatusWindow() {
+        logStore.log("設定と状態表示メニュー選択", category: "MenuBar")
+        Task { @MainActor in
+            if statusWindow == nil {
+                statusWindow = AppStatusWindow(
+                    viewModel: viewModel,
+                    windowManager: WindowStateManager.shared,
+                    logStore: logStore,
+                    configResult: configResult,
+                    resolvedEndpoint: resolvedEndpoint,
+                    launchDate: appLaunchDate,
+                    checkAccessibilityPermission: checkAccessibilityPermission
+                )
+            }
+            statusWindow?.show()
         }
     }
 

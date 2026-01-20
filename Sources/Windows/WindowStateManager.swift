@@ -5,6 +5,7 @@ class WindowStateManager: ObservableObject {
     static let shared = WindowStateManager()
 
     @Published private(set) var isChatWindowVisible = false
+    @Published private(set) var isInputLauncherVisible = false
 
     private var floatingChatWindow: FloatingChatWindow?
     private var inputLauncherWindow: InputLauncherWindow?
@@ -61,6 +62,7 @@ class WindowStateManager: ObservableObject {
         }
 
         inputLauncherWindow?.show()
+        isInputLauncherVisible = true
         viewModel?.logStore.log("入力ランチャー表示完了", category: "WindowManager")
     }
 
@@ -68,6 +70,7 @@ class WindowStateManager: ObservableObject {
     func hideInputLauncher() {
         viewModel?.logStore.log("入力ランチャー非表示開始", category: "WindowManager")
         inputLauncherWindow?.hide()
+        isInputLauncherVisible = false
         viewModel?.logStore.log("入力ランチャー非表示完了", category: "WindowManager")
     }
 

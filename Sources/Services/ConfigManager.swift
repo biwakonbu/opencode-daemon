@@ -1,5 +1,25 @@
 import Foundation
 
+enum ConfigSource {
+    case configFile
+    case legacyConfigFile
+    case defaultPath
+}
+
+enum ApiKeySource {
+    case configFile
+    case openCodeAuth
+    case missing
+}
+
+struct ConfigLoadResult {
+    let config: Config
+    let configPath: String
+    let configSource: ConfigSource
+    let apiKeySource: ApiKeySource
+    let openCodeAuthPath: String
+}
+
 class ConfigManager {
     private let configPath: String
     private let legacyConfigPath: String
@@ -37,17 +57,32 @@ class ConfigManager {
     }
 
     func loadConfig() throws -> Config {
+        try loadConfigWithMetadata().config
+    }
+
+    func loadConfigWithMetadata() throws -> ConfigLoadResult {
         let url = resolveConfigURL()
         let data = try Data(contentsOf: url)
         var config = try JSONDecoder().decode(Config.self, from: data)
 
-        if config.apiKey == "your-api-key-here" || config.apiKey.isEmpty {
+        let isPlaceholderKey = config.apiKey == "your-api-key-here" || config.apiKey.isEmpty
+        var apiKeySource: ApiKeySource = .configFile
+        if isPlaceholderKey {
             if let openCodeKey = loadOpenCodeAuthKey() {
                 config.apiKey = openCodeKey
+                apiKeySource = .openCodeAuth
+            } else {
+                apiKeySource = .missing
             }
         }
 
-        return config
+        return ConfigLoadResult(
+            config: config,
+            configPath: url.path,
+            configSource: resolveConfigSource(),
+            apiKeySource: apiKeySource,
+            openCodeAuthPath: openCodeAuthPath
+        )
     }
 
     func saveConfig(_ config: Config) throws {
@@ -69,5 +104,16 @@ class ConfigManager {
             return URL(fileURLWithPath: legacyConfigPath)
         }
         return URL(fileURLWithPath: configPath)
+    }
+
+    private func resolveConfigSource() -> ConfigSource {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: configPath) {
+            return .configFile
+        }
+        if fileManager.fileExists(atPath: legacyConfigPath) {
+            return .legacyConfigFile
+        }
+        return .defaultPath
     }
 }

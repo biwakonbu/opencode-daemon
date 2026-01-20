@@ -11,6 +11,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
     private var globalShortcutMonitor: GlobalShortcutMonitor?
     private var mcpImageAnalyzer: MCPImageAnalyzer?
     private var notificationCenter: NotificationCenterService?
+    private let appLaunchDate = Date()
     private let logStore = RuntimeLogStore.shared
     private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "AppDelegate")
 
@@ -28,7 +29,9 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             let configManager = ConfigManager()
             self.configManager = configManager
 
-            let config = try configManager.loadConfig()
+            let configResult = try configManager.loadConfigWithMetadata()
+            let config = configResult.config
+            let resolvedEndpoint = resolveEndpoint(config.apiEndpoint)
             os_log("API Endpoint: %@", log: logger, type: .info, config.apiEndpoint)
             os_log("API Key: %@", log: logger, type: .info, config.apiKey.isEmpty ? "未設定" : "設定済")
             logStore.log("API Endpoint: \(config.apiEndpoint)", category: "Config")
@@ -50,10 +53,6 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
 
             WindowStateManager.shared.setup(viewModel: viewModel)
 
-            let menuBarManager = MenuBarManager(viewModel: viewModel)
-            self.menuBarManager = menuBarManager
-            menuBarManager.setup()
-
             let notificationCenter = NotificationCenterService()
             self.notificationCenter = notificationCenter
             notificationCenter.requestNotificationAuthorization()
@@ -61,6 +60,18 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             let globalShortcutMonitor = GlobalShortcutMonitor(logStore: logStore)
             globalShortcutMonitor.delegate = self
             self.globalShortcutMonitor = globalShortcutMonitor
+
+            let menuBarManager = MenuBarManager(
+                viewModel: viewModel,
+                configResult: configResult,
+                resolvedEndpoint: resolvedEndpoint,
+                appLaunchDate: appLaunchDate,
+                checkAccessibilityPermission: { [weak globalShortcutMonitor] in
+                    globalShortcutMonitor?.checkAccessibilityPermissions(prompt: false) ?? false
+                }
+            )
+            self.menuBarManager = menuBarManager
+            menuBarManager.setup()
 
             if !globalShortcutMonitor.checkAccessibilityPermissions() {
                 showAlert(
@@ -100,6 +111,11 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         alert.alertStyle = .critical
         alert.addButton(withTitle: "OK")
         alert.runModal()
+    }
+
+    private func resolveEndpoint(_ endpoint: String) -> String {
+        let trimmed = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? OpenCodeAPIClient.fallbackEndpoint : trimmed
     }
 }
 

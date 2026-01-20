@@ -2,6 +2,8 @@ import Foundation
 import os.log
 
 class OpenCodeAPIClient: OpenCodeAPIClientProtocol {
+    static let fallbackEndpoint = "http://127.0.0.1:4096"
+
     private var config: Config?
     private let session: URLSession
     private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "APIClient")
@@ -159,7 +161,7 @@ class OpenCodeAPIClient: OpenCodeAPIClientProtocol {
 
     private func resolvedEndpoint() -> String {
         let endpoint = config?.apiEndpoint.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return endpoint.isEmpty ? "http://127.0.0.1:4096" : endpoint
+        return endpoint.isEmpty ? Self.fallbackEndpoint : endpoint
     }
 
     private func applyHeaders(_ request: inout URLRequest) {
