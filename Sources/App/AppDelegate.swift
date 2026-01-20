@@ -148,3 +148,4 @@ extension AppDelegate: GlobalShortcutDelegate {
         }
     }
 }
+// test
