@@ -33,7 +33,9 @@ class GlobalShortcutMonitor {
     func stopMonitoring() {
         chatWindowHotKey = nil
         inputLauncherHotKey = nil
-        monitors.forEach { NSEvent.removeMonitor($0) }
+        for monitor in monitors {
+            NSEvent.removeMonitor(monitor)
+        }
         monitors.removeAll()
         logStore.log("グローバルショートカット監視を停止", category: "GlobalShortcut")
     }

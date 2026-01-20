@@ -158,8 +158,8 @@ struct AppStatusView: View {
     }()
 }
 
-private extension ConfigSource {
-    var displayName: String {
+extension ConfigSource {
+    fileprivate var displayName: String {
         switch self {
         case .configFile:
             return ".config.json"
@@ -171,8 +171,8 @@ private extension ConfigSource {
     }
 }
 
-private extension ApiKeySource {
-    var displayName: String {
+extension ApiKeySource {
+    fileprivate var displayName: String {
         switch self {
         case .configFile:
             return "設定ファイル"
