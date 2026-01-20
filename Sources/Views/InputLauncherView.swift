@@ -29,7 +29,7 @@ struct InputLauncherView: View {
         LinearGradient(
             colors: [
                 Color(red: 0.18, green: 0.54, blue: 0.95),
-                Color(red: 0.22, green: 0.78, blue: 0.68)
+                Color(red: 0.22, green: 0.78, blue: 0.68),
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -148,7 +148,7 @@ struct InputLauncherView: View {
                     LinearGradient(
                         colors: [
                             Color(red: 0.86, green: 0.22, blue: 0.2),
-                            Color(red: 0.95, green: 0.48, blue: 0.2)
+                            Color(red: 0.95, green: 0.48, blue: 0.2),
                         ],
                         startPoint: .leading,
                         endPoint: .trailing

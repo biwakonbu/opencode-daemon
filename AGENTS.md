@@ -122,6 +122,7 @@
 #### Lint / Format
 - SwiftLint: `.swiftlint.yml` を使用し `./Scripts/lint.sh` で実行
 - swift-format: `.swift-format` を使用し `./Scripts/format.sh` で実行
+- **重要**: 静的解析（SwiftLint、swift-format、コンパイラ）のすべての警告とエラーは必須で修正する
 
 #### 命名規則
 - クラス/構造体: PascalCase
