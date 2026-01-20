@@ -11,6 +11,8 @@ class WindowStateManager: ObservableObject {
     private var inputLauncherWindow: InputLauncherWindow?
     private var viewModel: OpenCodeViewModel?
     
+    private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "WindowManager")
+    
     private init() {}
     
     func setup(viewModel: OpenCodeViewModel) {
@@ -20,7 +22,6 @@ class WindowStateManager: ObservableObject {
     
     func showChatWindow() {
         viewModel?.logStore.log("チャットウィンドウ表示開始", category: "WindowManager")
-        viewModel?.logStore.log("現在のスレッド: \(Thread.isMainThread)", category: "WindowManager")
         hideInputLauncher()
         
         if floatingChatWindow == nil, let viewModel = viewModel {
@@ -31,7 +32,6 @@ class WindowStateManager: ObservableObject {
         floatingChatWindow?.show()
         isChatWindowVisible = true
         viewModel?.logStore.log("チャットウィンドウ表示完了, 可視状態: \(isChatWindowVisible)", category: "WindowManager")
-        viewModel?.logStore.log("ウィンドウインスタンス: \(String(describing: floatingChatWindow))", category: "WindowManager")
     }
     
     func hideChatWindow() {
@@ -71,7 +71,10 @@ class WindowStateManager: ObservableObject {
         let logStore = viewModel?.logStore ?? RuntimeLogStore.shared
         logStore.log("アプリ再起動開始", category: "WindowManager")
         
-        let appBundlePath = Bundle.main.bundlePath
+        guard let appBundlePath = Bundle.main.bundlePath else {
+            logStore.log("バンドルパスが取得できません", level: .error, category: "WindowManager")
+            return
+        }
         
         logStore.log("バンドルパス: \(appBundlePath)", category: "WindowManager")
         
@@ -79,18 +82,25 @@ class WindowStateManager: ObservableObject {
         task.launchPath = "/usr/bin/open"
         task.arguments = ["-n", appBundlePath]
         
-        logStore.log("openコマンド実行開始", category: "WindowManager")
-        
         task.terminationHandler = { status in
             logStore.log("openコマンド終了, ステータス: \(status)", category: "WindowManager")
             
-            DispatchQueue.main.async {
-                logStore.log("アプリを終了します", category: "WindowManager")
-                NSApplication.shared.terminate(nil)
+            if status == 0 {
+                logStore.log("openコマンド成功, 既存プロセスを確認して終了します", category: "WindowManager")
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    logStore.log("アプリを終了します", category: "WindowManager")
+                    NSApplication.shared.terminate(nil)
+                }
+            } else {
+                logStore.log("openコマンド失敗(ステータス: \(status)), アプリを終了します", level: .error, category: "WindowManager")
+                DispatchQueue.main.async {
+                    NSApplication.shared.terminate(nil)
+                }
             }
         }
         
         task.launch()
-        logStore.log("openコマンド起動", category: "WindowManager")
+        logStore.log("openコマンド実行", category: "WindowManager")
     }
 }
