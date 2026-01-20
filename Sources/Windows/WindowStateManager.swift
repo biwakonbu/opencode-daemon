@@ -1,5 +1,6 @@
 import Cocoa
 import SwiftUI
+import os.log
 
 class WindowStateManager: ObservableObject {
     static let shared = WindowStateManager()
@@ -67,11 +68,20 @@ class WindowStateManager: ObservableObject {
     }
     
     func restartApp() {
-        viewModel?.logStore.log("アプリ再起動開始", category: "WindowManager")
+        let logStore = viewModel?.logStore ?? RuntimeLogStore.shared
+        logStore.log("アプリ再起動開始", category: "WindowManager")
+        
+        let appPath = Bundle.main.bundlePath
+        logStore.log("バンドルパス: \(appPath)", category: "WindowManager")
+        
         let task = Process()
         task.launchPath = "/usr/bin/open"
-        task.arguments = [Bundle.main.bundlePath]
+        task.arguments = [appPath]
         task.launch()
-        NSApplication.shared.terminate(nil)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            logStore.log("アプリを終了します", category: "WindowManager")
+            NSApplication.shared.terminate(nil)
+        }
     }
 }
