@@ -3,20 +3,26 @@ import SwiftUI
 import os.log
 
 public class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusBar: StatusBar?
+    private var menuBarManager: MenuBarManager?
     private var configManager: ConfigManager?
     private var apiClient: OpenCodeAPIClient?
     private var screenshotCapture: ScreenshotCapture?
     private var viewModel: OpenCodeViewModel?
+    private var globalShortcutMonitor: GlobalShortcutMonitor?
+    private var mcpImageAnalyzer: MCPImageAnalyzer?
+    private var notificationCenter: NotificationCenterService?
     private let logStore = RuntimeLogStore.shared
     private let logger = OSLog(subsystem: "com.opencodemenu.app", category: "AppDelegate")
     
+    @MainActor
     public func applicationDidFinishLaunching(_ notification: Notification) {
-        setupApp()
+        Task {
+            await setupApp()
+        }
     }
     
     @MainActor
-    private func setupApp() {
+    private func setupApp() async {
         logStore.log("アプリケーション初期化を開始", category: "App")
         do {
             let configManager = ConfigManager()
@@ -42,8 +48,36 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             )
             self.viewModel = viewModel
             
-            statusBar = StatusBar(viewModel: viewModel)
-            statusBar?.setup()
+            WindowStateManager.shared.setup(viewModel: viewModel)
+            
+            let menuBarManager = MenuBarManager(viewModel: viewModel)
+            self.menuBarManager = menuBarManager
+            menuBarManager.setup()
+            
+            let notificationCenter = NotificationCenterService()
+            self.notificationCenter = notificationCenter
+            notificationCenter.requestNotificationAuthorization()
+            
+            let globalShortcutMonitor = GlobalShortcutMonitor()
+            globalShortcutMonitor.delegate = self
+            self.globalShortcutMonitor = globalShortcutMonitor
+            globalShortcutMonitor.startMonitoring()
+            
+            let mcpImageAnalyzer = MCPImageAnalyzer(
+                apiClient: apiClient,
+                viewModel: viewModel,
+                notificationCenter: notificationCenter,
+                logStore: logStore
+            )
+            self.mcpImageAnalyzer = mcpImageAnalyzer
+            
+            if !globalShortcutMonitor.checkAccessibilityPermissions() {
+                showAlert(
+                    title: "アクセシビリティ権限が必要",
+                    message: "スクリーンショット機能を使用するには、システム環境設定 > プライバシーとセキュリティ > アクセシビリティ でこのアプリを許可してください"
+                )
+            }
+            
             logStore.log("アプリケーション初期化完了", category: "App")
             
         } catch {
@@ -65,5 +99,41 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         alert.alertStyle = .critical
         alert.addButton(withTitle: "OK")
         alert.runModal()
+    }
+}
+
+extension AppDelegate: GlobalShortcutDelegate {
+    func didToggleChatWindow() {
+        WindowStateManager.shared.toggleChatWindow()
+    }
+    
+    func didShowInputLauncher() {
+        WindowStateManager.shared.showInputLauncher()
+    }
+    
+    func didCaptureRect(_ rect: CGRect) {
+        Task { @MainActor in
+            await handleRectCapture(rect)
+        }
+    }
+    
+    private func handleRectCapture(_ rect: CGRect) async {
+        logStore.log("矩形キャプチャ検出: \(rect)", category: "Capture")
+        
+        guard let mainScreen = NSScreen.main else {
+            logStore.log("メインスクリーンが見つかりません", level: .error, category: "Capture")
+            await notificationCenter?.sendErrorNotification(title: "エラー", message: "メインスクリーンが見つかりません")
+            return
+        }
+        
+        do {
+            let rectCapture = ScreenshotRectCapture()
+            let imageData = try rectCapture.captureRectAsData(rect, from: mainScreen)
+            logStore.log("キャプチャ成功: \(imageData.count) bytes", category: "Capture")
+            await mcpImageAnalyzer?.sendImageWithAutoSession(imageData: imageData)
+        } catch {
+            logStore.log("キャプチャ失敗: \(error.localizedDescription)", level: .error, category: "Capture")
+            await notificationCenter?.sendErrorNotification(title: "エラー", message: "スクリーンショットの取得に失敗しました")
+        }
     }
 }

@@ -144,4 +144,99 @@ class OpenCodeViewModel: ObservableObject {
         errorMessage = nil
         logStore.log("セッションをクリアしました", category: "ViewModel")
     }
+    
+    func ensureSessionExists(imageData: Data? = nil) async -> Bool {
+        if currentSession != nil {
+            return true
+        }
+        await createSession()
+        return currentSession != nil
+    }
+    
+    func addMessage(_ message: OpenCodeMessage) {
+        messages.append(message)
+    }
+    
+    func sendImageWithAutoSession(imageData: Data) async {
+        isLoading = true
+        errorMessage = nil
+        
+        guard await ensureSessionExists(imageData: imageData) else {
+            errorMessage = "セッションの作成に失敗しました"
+            isLoading = false
+            return
+        }
+        
+        guard let session = currentSession else {
+            errorMessage = "セッションが作成されていません"
+            isLoading = false
+            return
+        }
+        
+        do {
+            let dataURL = encodeImageData(imageData)
+            let filePart = OpenCodeMessagePart.file(
+                url: dataURL,
+                mime: "image/png",
+                filename: "screenshot.png"
+            )
+            
+            let userText = """
+            次のスクリーンショットを分析してください。
+            
+            必要に応じて以下のMCPツールを自動で選択して使用してください：
+            - zai-mcp-server_analyze_image: 一般的な画像分析
+            - zai-mcp-server_extract_text_from_screenshot: テキスト抽出
+            - zai-mcp-server_ui_to_artifact: UI画面をコード変換
+            - zai-mcp-server_diagnose_error_screenshot: エラー診断
+            - zai-mcp-server_understand_technical_diagram: 技術図解
+            - zai-mcp-server_analyze_data_visualization: データ可視化
+            
+            画像の内容に応じて最適なツールを選び、結果が不十分な場合は別のツールも試してください。
+            """
+            
+            let request = SendMessageRequest(
+                sessionId: session.id,
+                parts: [filePart, .text(userText)],
+                model: nil
+            )
+            
+            let response = try await apiClient.sendMessage(request)
+            
+            let userMessage = OpenCodeMessage(
+                id: UUID().uuidString,
+                sessionId: session.id,
+                content: "スクリーンショットを送信しました",
+                role: "user"
+            )
+            messages.append(userMessage)
+            
+            if !response.content.isEmpty {
+                let assistantMessage = OpenCodeMessage(
+                    id: response.id,
+                    sessionId: session.id,
+                    content: response.content,
+                    role: response.role,
+                    timestamp: response.timestamp
+                )
+                messages.append(assistantMessage)
+                logStore.log("MCP分析結果受信", category: "ViewModel")
+            }
+            
+            var updatedSession = session
+            updatedSession.update()
+            currentSession = updatedSession
+            
+        } catch {
+            errorMessage = error.localizedDescription
+            logStore.log("画像送信失敗: \(error.localizedDescription)", level: .error, category: "ViewModel")
+        }
+        
+        isLoading = false
+    }
+    
+    private func encodeImageData(_ data: Data) -> String {
+        let base64 = data.base64EncodedString()
+        return "data:image/png;base64,\(base64)"
+    }
 }

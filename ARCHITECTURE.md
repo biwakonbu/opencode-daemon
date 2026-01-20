@@ -112,12 +112,47 @@ graph TD
 - `MenuBarManager.swift`: メニューバー管理
   - ステータスアイコンの表示
   - ポップアップの管理
+  - 右クリックコンテキストメニューの表示
   - イベントハンドリング
 
 **特性**:
 - NSApplicationDelegateに準拠
 - アプリ全体の初期化を担当
 - メニューバーアプリとしての動作を制御
+
+### Window Layer
+
+**責任**: ウィンドウの管理と表示制御
+
+- `FloatingChatWindow.swift`: フローティングチャットウィンドウ
+  - 独立したチャットインターフェースの提供
+  - リサイズ可能なウィンドウ管理
+  - フローティングレベルでの表示制御
+
+- `InputLauncherWindow.swift`: 入力ランチャーウィンドウ
+  - 簡易入力インターフェースの提供
+  - 画面中央配置
+  - 送信後の自動クローズ制御
+
+- `WindowStateManager.swift`: ウィンドウ状態管理
+  - フローティングチャットウィンドウの表示/非表示管理
+  - 入力ランチャーの表示/非表示管理
+  - ウィンドウ間の排他制御
+
+**特性**:
+- NSWindowを継承したカスタムウィンドウ
+- SwiftUIのHostingViewを使用
+- ウィンドウレベル（.floating）での表示
+- スペース間の移動対応（.canJoinAllSpaces）
+
+### Service Layer (追加)
+
+- `GlobalShortcutMonitor.swift`: グローバルショートカット監視
+  - Cmd+Shift+O: チャットウィンドウ切り替え
+  - Cmd+Shift+I: 入力ランチャー表示
+  - Shift+マウスドラッグ: 矩形選択開始
+  - ESC: 選択キャンセル
+  - アクセシビリティ権限の管理
 
 ## データフロー
 
@@ -189,8 +224,38 @@ OpenCodeAPIへのリクエスト (メッセージ)
 OpenCodeAPIからのレスポンス
   ↓
 ViewModelのmessagesに追加 (@Published)
-  ↓
+   ↓
 ContentViewのUIが自動更新
+```
+
+### チャットウィンドウ表示フロー
+
+```
+ユーザーアクション (Cmd+Shift+O または 右クリックメニュー)
+  ↓
+GlobalShortcutMonitor.didToggleChatWindow() または MenuBarManager.showChatWindow()
+  ↓
+WindowStateManager.toggleChatWindow()
+  ↓
+チャットウィンドウの表示/非表示切り替え
+  ↓
+isChatWindowVisibleの更新 (@Published)
+```
+
+### 入力ランチャー表示フロー
+
+```
+ユーザーアクション (Cmd+Shift+I または 右クリックメニュー)
+  ↓
+GlobalShortcutMonitor.didShowInputLauncher() または MenuBarManager.showInputLauncher()
+  ↓
+WindowStateManager.showInputLauncher()
+  ↓
+チャットウィンドウが表示中の場合は非表示
+  ↓
+入力ランチャーを表示
+  ↓
+画面中央に配置
 ```
 
 ## メモリ管理

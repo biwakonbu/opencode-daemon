@@ -1,42 +1,16 @@
 import SwiftUI
 
 struct ContentView: View {
-    private enum DisplayMode: String, CaseIterable, Identifiable {
-        case chat
-        case log
-        
-        var id: String { rawValue }
-        
-        var title: String {
-            switch self {
-            case .chat:
-                return "チャット"
-            case .log:
-                return "ログ"
-            }
-        }
-    }
-    
     @ObservedObject var viewModel: OpenCodeViewModel
     @FocusState private var isInputFocused: Bool
-    @State private var displayMode: DisplayMode = .chat
-    @State private var isLogAutoScroll: Bool = true
     
     var body: some View {
         VStack(spacing: 0) {
             headerView
             Divider()
-            if displayMode == .chat {
-                messagesView
-            } else {
-                logView
-            }
+            messagesView
             Divider()
-            if displayMode == .chat {
-                inputView
-            } else {
-                logControlView
-            }
+            inputView
         }
         .frame(width: 400, height: 500)
         .onAppear {
@@ -61,15 +35,6 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundColor(.gray)
             }
-            
-            Picker("", selection: $displayMode) {
-                ForEach(DisplayMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 160)
-            .padding(.trailing)
         }
         .padding(.vertical, 8)
         .background(Color.gray.opacity(0.1))
@@ -174,37 +139,6 @@ struct ContentView: View {
                 
                 Button(action: {
                     viewModel.clearSession()
-                }) {
-                    Text("クリア")
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 8)
-        .background(Color.gray.opacity(0.1))
-    }
-    
-    private var logView: some View {
-        LogViewerView(logStore: viewModel.logStore, autoScroll: $isLogAutoScroll)
-            .padding()
-    }
-    
-    private var logControlView: some View {
-        VStack(spacing: 8) {
-            Text("ログファイル: \(viewModel.logStore.logFilePath())")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.horizontal)
-            
-            HStack(spacing: 8) {
-                Toggle("自動スクロール", isOn: $isLogAutoScroll)
-                    .toggleStyle(.switch)
-                
-                Spacer()
-                
-                Button(action: {
-                    viewModel.logStore.clear()
                 }) {
                     Text("クリア")
                 }

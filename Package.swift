@@ -27,7 +27,8 @@ let package = Package(
                 "Models",
                 "Services",
                 "ViewModels",
-                "Views"
+                "Views",
+                "Windows"
             ],
             sources: ["OpenCodeMenuApp.swift"],
             linkerSettings: [
@@ -41,6 +42,14 @@ let package = Package(
             dependencies: ["KeychainAccess"],
             path: "Sources",
             exclude: ["OpenCodeMenuApp.swift"],
+            sources: [
+                "App",
+                "Models",
+                "Services",
+                "ViewModels",
+                "Views",
+                "Windows"
+            ],
             linkerSettings: [
                 .linkedFramework("Cocoa"),
                 .linkedFramework("SwiftUI"),
